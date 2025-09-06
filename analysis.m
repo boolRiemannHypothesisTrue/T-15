@@ -189,79 +189,44 @@ savefig(fullfile("Fourier_spectrum_decline"))
 %  toc
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%% END UNCOMMENT
 
-%% Wavelet transform
+%% Wavelet transform -> Skeleton
 
 figure 
 fp_for_wavelet = s1_cleaned;
-% Подготовка данных
- t = t_cleaned; % Временная ось
+t = t_cleaned; % временная ось
 
-% Вейвлет , шкала
-
-wname = 'morl'; % название вейвлета
+% Вейвлет и шкала
+wname = 'morl'; % например Морле
 scales2 = 1:0.01:100;
 cwt_coeffs2 = cwt(fp_for_wavelet, scales2, wname);
 
-% Отображение вейвлет-коэффициентов
+% Берем модуль
+cfs_abs = abs(cwt_coeffs2);
 
-imagesc(t, scales2, abs(cwt_coeffs2));
+% Матрица скелета
+skeleton = zeros(size(cfs_abs));
+
+for k = 1:size(cfs_abs,2)   % по времени
+    % Максимумы
+    [~,locsMax] = findpeaks(cfs_abs(:,k));
+    skeleton(locsMax,k) = 1; 
+    
+    % Минимумы
+    [~,locsMin] = findpeaks(-cfs_abs(:,k));
+    skeleton(locsMin,k) = -1; 
+end
+
+% Отображение скелетограммы
+imagesc(t, scales2, skeleton);
 axis xy;
-colormap jet;
-colorbar;
+colormap([0 0 1; 1 1 1; 1 0 0]); % синий=минимумы, белый=фон, красный=максимумы
 set(gca, 'YScale', 'log', 'YTick', 2.^(0:10));
 ylabel('Scale, μs');
 xlabel('Time, μs ');
-title(['Wavelet (' num2str(wname) ') transform of floating potential signal. White - time-series']);
+title(['Skeleton of Wavelet (' wname ') coefficients']);
 
-labels = [
-          xlabel('$Time,\ \mu s$', 'FontSize', 14), ...
-          ylabel('$Scale,\ \mu s$', 'FontSize', 14)];
-
-set(labels, 'Interpreter', 'latex');
 set(gca, 'FontSize', 16, 'LineWidth', 2)
 set(gcf, 'Color', 'white')
-
-% Нормализация и прижатие временного ряда к низу
-
-hold on;
-norm_signal = (fp_for_wavelet - min(fp_for_wavelet)) / ...
-              (max(fp_for_wavelet) - min(fp_for_wavelet));  % [0,1]
-low = 1;             % нижняя граница (scale)
-high = 2;            % верхняя граница (scale)
-signal_scaled = norm_signal * (high - low) + low;
-plot(t, signal_scaled, 'white', 'LineWidth', 1.5);  
-hold off
-
-%savefig(fullfile(results_path,['Wavelet ' num2str(wname)]))
-
-figure 
-wname = 'mexh'; % название вейвлета
-cwt_coeffs2 = cwt(fp_for_wavelet, scales2, wname);
-imagesc(t, scales2, abs(cwt_coeffs2));
-axis xy;
-colormap jet;
-colorbar;
-set(gca, 'YScale', 'log', 'YTick', 2.^(0:10));
-ylabel('Scale, μs');
-xlabel('Time, μs ');
-title(['Wavelet (' num2str(wname) ') transform of floating potential signal. White - time-series']);
-
-labels = [
-          xlabel('$Time,\ \mu s$', 'FontSize', 14), ...
-          ylabel('$Scale,\ \mu s$', 'FontSize', 14)];
-
-set(labels, 'Interpreter', 'latex');
-set(gca, 'FontSize', 16, 'LineWidth', 2)
-set(gcf, 'Color', 'white')
-% Нормализация и прижатие временного ряда к низу
-
-hold on;
-norm_signal = (fp_for_wavelet - min(fp_for_wavelet)) / ...
-              (max(fp_for_wavelet) - min(fp_for_wavelet));  % [0,1]
-low = 1;             % нижняя граница (scale)
-high = 2;            % верхняя граница (scale)
-signal_scaled = norm_signal * (high - low) + low;
-plot(t, signal_scaled, 'white', 'LineWidth', 1.5);
 
 %savefig(fullfile(results_path,['Wavelet ' num2str(wname)]))
 
@@ -273,3 +238,5 @@ correlationDimension(s1_cleaned,lag,dim,"NumPoints",Np);
 %%
 ts = s1_cleaned;
 [~,elag,edim] = phaseSpaceReconstruction(ts)
+
+%%
